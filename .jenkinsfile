@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "flask-dashboard-visulisation"
+        CONTAINER_NAME = "flask-app"
+        NGROK_TOKEN = credentials('ngrok-token') // token ngrok stocké dans Jenkins Credentials
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/ton-utilisateur/ton-depot.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${IMAGE_NAME} ."
+                }
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                script {
+                    sh "docker stop ${CONTAINER_NAME} || true"
+                    sh "docker rm ${CONTAINER_NAME} || true"
+                    sh "docker run -d -p 8000:8000 --name ${CONTAINER_NAME} ${IMAGE_NAME}"
+                }
+            }
+        }
+
+        stage('Expose via ngrok') {
+            steps {
+                script {
+                    sh "ngrok authtoken ${NGROK_TOKEN}"
+                    sh "nohup ngrok http 8000 &"
+                    sh "sleep 5"
+                    sh "curl http://127.0.0.1:4040/api/tunnels"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline exécuté avec succès !'
+        }
+        failure {
+            echo 'Pipeline échoué...'
+        }
+    }
+}
