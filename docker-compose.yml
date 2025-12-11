@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  backend:
+    build: .
+    container_name: Visi
+    ports:
+      - "5000:5000"
+    environment:
+      MODE: "production"
+    volumes:
+      - .:/app  # optional for development
